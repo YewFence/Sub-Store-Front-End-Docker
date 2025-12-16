@@ -83,6 +83,17 @@ docker compose up -d --build
 
 #### Custom Configuration
 
+All configuration options can be set via:
+1. **Environment variables** when running docker compose
+2. **`.env` file** in the project root (see `.env.production` for examples)
+3. **Command line arguments** with `--build-arg`
+
+**Available Environment Variables:**
+- `VITE_API_URL` - Backend API URL (default: `https://sub.store`)
+- `PORT` - Frontend service port (default: `8888`)
+- `NETWORK_NAME` - Docker network name (default: `sub-store-network`)
+- `NETWORK_EXTERNAL` - Use external network (default: `false`)
+
 **Option 1: Environment Variables**
 ```bash
 # Custom backend API URL
@@ -94,13 +105,24 @@ PORT=9999 docker compose up -d
 
 **Option 2: .env File**
 ```bash
-# Create .env file
-echo "VITE_API_URL=http://your-backend:3000" > .env
-echo "PORT=8888" >> .env
+# Create .env file (recommended for production)
+cat > .env << EOF
+# Backend API configuration
+VITE_API_URL=http://sub-store-backend:3000
+
+# Frontend port
+PORT=8888
+
+# Network configuration
+NETWORK_NAME=sub-store-network
+NETWORK_EXTERNAL=false
+EOF
 
 # Start with docker compose
 docker compose up -d --build
 ```
+
+> **Tip**: Check `.env.production` for more configuration examples and usage instructions.
 
 **Option 3: Direct Docker Build**
 ```bash
