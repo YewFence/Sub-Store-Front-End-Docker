@@ -5,14 +5,13 @@ FROM node:18-alpine AS builder
 WORKDIR /app
 
 # 安装 pnpm (使用固定版本确保构建一致性)
-RUN npm install -g pnpm@7.30.0
+RUN npm install -g pnpm@10
 
 # 先复制依赖清单,利用 Docker 层缓存
 COPY package.json pnpm-lock.yaml ./
 
 # 安装依赖
-# 使用 --no-frozen-lockfile 因为 lock 文件可能与 package.json 不完全同步
-RUN pnpm install --no-frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 # 复制源代码和配置文件
 COPY . .
