@@ -1,0 +1,150 @@
+name: Docker Build and Push
+
+on:
+  # PR 时构建测试
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'Dockerfile'
+      - 'nginx.conf'
+      - 'docker-compose.yml'
+      - 'src/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/docker.yml'
+
+  # Master 分支推送时构建并推送
+  push:
+    branches:
+      - master
+    paths:
+      - 'Dockerfile'
+      - 'nginx.conf'
+      - 'docker-compose.yml'
+      - 'src/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/docker.yml'
+
+  # 手动触发
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # PR 时仅构建测试
+  build-test:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout 代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 构建 Docker 镜像 (测试)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VITE_API_URL=https://sub.store
+
+      - name: 构建成功通知
+        run: |
+          echo "✅ Docker 镜像构建成功!"
+          echo "📦 镜像标签: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}"
+
+  # Master 分支推送时构建并推送到 GHCR
+  build-push:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout 代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 登录到 GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 提取 Docker 元数据
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            # 设置 latest 标签
+            type=raw,value=latest,enable={{is_default_branch}}
+            # 使用 package.json 版本号
+            type=semver,pattern={{version}},value=${{ steps.version.outputs.version }}
+            # 使用 Git SHA 短码
+            type=sha,prefix={{branch}}-,format=short
+            # 使用分支名
+            type=ref,event=branch
+            # 使用日期
+            type=raw,value={{date 'YYYYMMDD-HHmmss'}}
+
+      - name: 获取版本号
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "📌 当前版本: $VERSION"
+
+      - name: 构建并推送 Docker 镜像
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VITE_API_URL=https://sub.store
+          platforms: linux/amd64,linux/arm64
+
+      - name: 生成镜像摘要
+        run: |
+          echo "### 🎉 Docker 镜像构建成功!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**镜像信息:**" >> $GITHUB_STEP_SUMMARY
+          echo "- 📦 镜像: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- 🏷️ 版本: \`${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔖 标签: \`latest\`, \`${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- 🏗️ 架构: \`linux/amd64\`, \`linux/arm64\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**使用方式:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "# 拉取最新镜像" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# 运行容器" >> $GITHUB_STEP_SUMMARY
+          echo "docker run -d -p 8888:8888 --name sub-store-frontend ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: 清理旧镜像
+        if: success()
+        run: |
+          echo "🧹 旧镜像会根据 GitHub 的保留策略自动清理"
+          echo "你可以在 GitHub Packages 页面手动管理镜像版本"

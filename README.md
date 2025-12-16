@@ -71,6 +71,50 @@ Core functionalities:
 
 This project supports Docker deployment with optimized configuration for PWA and SPA features.
 
+[![Docker Build](https://github.com/$OWNER/$REPO/actions/workflows/docker.yml/badge.svg)](https://github.com/$OWNER/$REPO/actions/workflows/docker.yml)
+
+#### Using Pre-built Image from GitHub Container Registry
+
+The easiest way to deploy is using the pre-built Docker image:
+
+```bash
+# Pull the latest image
+docker pull ghcr.io/yewfence/sub-store-front-end-docker:latest
+
+# Run with default configuration
+docker run -d \
+  -p 8888:8888 \
+  --name sub-store-frontend \
+  ghcr.io/yewfence/sub-store-front-end-docker:latest
+
+# Run with custom backend API
+docker run -d \
+  -p 8888:8888 \
+  -e VITE_API_URL=http://your-backend:3000 \
+  --name sub-store-frontend \
+  ghcr.io/yewfence/sub-store-front-end-docker:latest
+
+# Or use with docker compose (create docker-compose.yml)
+services:
+  sub-store-frontend:
+    image: ghcr.io/yewfence/sub-store-front-end-docker:latest
+    container_name: sub-store-frontend
+    ports:
+      - "8888:8888"
+    environment:
+      - TZ=Asia/Shanghai
+    restart: unless-stopped
+```
+
+**Available Tags:**
+- `latest` - Latest stable build from master branch
+- `v2.x.x` - Specific version tags
+- `master-<sha>` - Build from specific commit
+
+#### Build from Source
+
+If you prefer to build the image yourself:
+
 #### Quick Start
 
 ```bash
