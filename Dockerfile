@@ -10,10 +10,9 @@ RUN npm install -g pnpm@7.30.0
 # 先复制依赖清单,利用 Docker 层缓存
 COPY package.json pnpm-lock.yaml ./
 
-# 配置 npm 镜像源并安装依赖
+# 安装依赖
 # 使用 --no-frozen-lockfile 因为 lock 文件可能与 package.json 不完全同步
-RUN pnpm config set registry https://registry.npmmirror.com && \
-    pnpm install --no-frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 # 复制源代码和配置文件
 COPY . .
