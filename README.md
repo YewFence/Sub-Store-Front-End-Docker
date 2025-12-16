@@ -71,33 +71,32 @@ Core functionalities:
 
 This project supports Docker deployment with optimized configuration for PWA and SPA features.
 
-[![Docker Build](https://github.com/$OWNER/$REPO/actions/workflows/docker.yml/badge.svg)](https://github.com/$OWNER/$REPO/actions/workflows/docker.yml)
+[![Docker Build](https://github.com/sub-store-org/Sub-Store-Front-End/actions/workflows/docker.yml/badge.svg)](https://github.com/sub-store-org/Sub-Store-Front-End/actions/workflows/docker.yml)
 
 #### Using Pre-built Image from GitHub Container Registry
 
 The easiest way to deploy is using the pre-built Docker image:
 
 ```bash
-# Pull the latest image
-docker pull ghcr.io/yewfence/sub-store-front-end-docker:latest
+# Pull the latest image (replace with your own registry if self-hosted)
+docker pull ghcr.io/<owner>/sub-store-front-end:latest
 
 # Run with default configuration
 docker run -d \
   -p 8888:8888 \
   --name sub-store-frontend \
-  ghcr.io/yewfence/sub-store-front-end-docker:latest
+  ghcr.io/<owner>/sub-store-front-end:latest
 
 # Run with custom backend API
 docker run -d \
   -p 8888:8888 \
-  -e VITE_API_URL=http://your-backend:3000 \
   --name sub-store-frontend \
-  ghcr.io/yewfence/sub-store-front-end-docker:latest
+  ghcr.io/<owner>/sub-store-front-end:latest
 
 # Or use with docker compose (create docker-compose.yml)
 services:
   sub-store-frontend:
-    image: ghcr.io/yewfence/sub-store-front-end-docker:latest
+    image: ghcr.io/<owner>/sub-store-front-end:latest
     container_name: sub-store-frontend
     ports:
       - "8888:8888"
@@ -105,6 +104,8 @@ services:
       - TZ=Asia/Shanghai
     restart: unless-stopped
 ```
+
+> **Note**: Replace `<owner>` with the actual GitHub username or organization name that hosts the image.
 
 **Available Tags:**
 - `latest` - Latest stable build from master branch
