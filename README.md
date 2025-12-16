@@ -65,6 +65,130 @@ Core functionalities:
 - [x] **Script operator**: modify proxy by script.
 
 
+## 3. Deployment
+
+### Docker Deployment (Recommended)
+
+This project supports Docker deployment with optimized configuration for PWA and SPA features.
+
+#### Quick Start
+
+```bash
+# Use default configuration (connects to https://sub.store)
+docker compose up -d --build
+
+# Access the application
+# http://localhost:8888
+```
+
+#### Custom Configuration
+
+**Option 1: Environment Variables**
+```bash
+# Custom backend API URL
+VITE_API_URL=http://your-backend:3000 docker compose up -d --build
+
+# Custom port
+PORT=9999 docker compose up -d
+```
+
+**Option 2: .env File**
+```bash
+# Create .env file
+echo "VITE_API_URL=http://your-backend:3000" > .env
+echo "PORT=8888" >> .env
+
+# Start with docker compose
+docker compose up -d --build
+```
+
+**Option 3: Direct Docker Build**
+```bash
+# Build image with custom API URL
+docker build --build-arg VITE_API_URL=http://your-backend:3000 -t sub-store-frontend .
+
+# Run container
+docker run -d -p 8888:8888 --name sub-store-frontend sub-store-frontend
+```
+
+**Option 4: Connect with Backend Container (Same Docker Network)**
+```bash
+# Method 1: Use default network (sub-store-network)
+# Frontend will connect to backend via service name
+VITE_API_URL=http://sub-store-backend:3000 docker compose up -d --build
+
+# Method 2: Use existing external network
+# If your backend is already in a network named "my-network"
+NETWORK_NAME=my-network NETWORK_EXTERNAL=true VITE_API_URL=http://backend-service:3000 docker compose up -d --build
+
+# Method 3: Full stack deployment example
+# Create a docker-compose file that includes both frontend and backend
+# See example below
+```
+
+**Full Stack Deployment Example**:
+```yaml
+# docker-compose.fullstack.yml
+services:
+  sub-store-backend:
+    image: your-backend-image:latest
+    container_name: sub-store-backend
+    ports:
+      - "3000:3000"
+    networks:
+      - sub-store-network
+
+  sub-store-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://sub-store-backend:3000
+    container_name: sub-store-frontend
+    ports:
+      - "8888:8888"
+    networks:
+      - sub-store-network
+    depends_on:
+      - sub-store-backend
+
+networks:
+  sub-store-network:
+    driver: bridge
+```
+
+Start with: `docker compose -f docker-compose.fullstack.yml up -d --build`
+
+#### Docker Features
+
+- ✅ Multi-stage build optimized image (~50MB)
+- ✅ PWA Service Worker cache strategy optimized
+- ✅ Dynamic backend API configuration via environment variables
+- ✅ Health check and auto-restart support
+- ✅ gzip compression and static resource caching
+- ✅ Nginx configuration optimized for SPA routing
+
+#### Health Check
+
+```bash
+# Check container health
+docker compose ps
+
+# Check health endpoint
+curl http://localhost:8888/health
+# Should return: healthy
+```
+
+#### Logs
+
+```bash
+# View logs
+docker compose logs -f sub-store-frontend
+
+# Stop container
+docker compose down
+```
+
 ### Development
 
 #### Guidelines
@@ -78,10 +202,10 @@ Commit message follows [@commitlint/config-angular](https://github.com/conventio
 - Pinia v2
 - Typescript v4.6
 
-#### Font Awesome Icon 
+#### Font Awesome Icon
 This project is using [Font Awesome](https://fontawesome.com/icons/check?s=regular) icons and this is [Documentation](https://fontawesome.com/docs/web/style/size)
 
-#### Start 
+#### Start
 ```bash
 # install dependencies
 pnpm i

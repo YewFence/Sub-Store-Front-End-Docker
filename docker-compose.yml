@@ -45,3 +45,14 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+    # 网络配置 (与后端容器通信)
+    networks:
+      - sub-store-network
+
+# 自定义网络 (支持服务名通信)
+networks:
+  sub-store-network:
+    name: ${NETWORK_NAME:-sub-store-network}
+    driver: bridge
+    external: ${NETWORK_EXTERNAL:-false}
