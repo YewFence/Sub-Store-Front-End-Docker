@@ -86,6 +86,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: 获取版本号
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "📌 当前版本: $VERSION"
+
       - name: 提取 Docker 元数据
         id: meta
         uses: docker/metadata-action@v5
@@ -95,20 +102,11 @@ jobs:
             # 设置 latest 标签
             type=raw,value=latest,enable={{is_default_branch}}
             # 使用 package.json 版本号
-            type=semver,pattern={{version}},value=${{ steps.version.outputs.version }}
+            type=raw,value=${{ steps.version.outputs.version }}
             # 使用 Git SHA 短码
-            type=sha,prefix={{branch}}-,format=short
-            # 使用分支名
-            type=ref,event=branch
+            type=sha,prefix=master-,format=short
             # 使用日期
             type=raw,value={{date 'YYYYMMDD-HHmmss'}}
-
-      - name: 获取版本号
-        id: version
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "📌 当前版本: $VERSION"
 
       - name: 构建并推送 Docker 镜像
         uses: docker/build-push-action@v5
